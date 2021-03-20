@@ -1,6 +1,8 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:todo_app/Models/todo.dart';
 import 'package:todo_app/Services/database.dart';
 import 'package:todo_app/Widgets/todo_cart.dart';
@@ -9,8 +11,9 @@ import 'package:todo_app/services/auth.dart';
 class Home extends StatefulWidget {
   final FirebaseAuth auth;
   final FirebaseFirestore firestore;
-
-  const Home({Key key, this.auth, this.firestore}) : super(key: key);
+  final AndroidNotificationChannel channel;
+  final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin;
+  const Home({Key key, this.auth, this.firestore,this.channel,this.flutterLocalNotificationsPlugin}) : super(key: key);
 
   @override
   _HomeState createState() => _HomeState();
@@ -18,7 +21,32 @@ class Home extends StatefulWidget {
 
 class _HomeState extends State<Home> {
   final TextEditingController _todoController = TextEditingController();
- 
+   @override
+  void initState() {
+    // TODO: implement initState
+    super.initState();
+    FirebaseMessaging.onMessage.listen((RemoteMessage message) {
+      RemoteNotification notification = message.notification;
+      AndroidNotification android = message.notification?.android;
+
+      if (notification != null && android != null) {
+        widget.flutterLocalNotificationsPlugin.show(
+            notification.hashCode,
+            notification.title,
+            notification.body,
+            NotificationDetails(
+              android: AndroidNotificationDetails(
+               widget.channel.id,
+                widget.channel.name,
+                widget.channel.description,
+                // TODO add a proper drawable resource to android, for now using
+                //      one that already exists in example app.
+                icon: 'launch_background',
+              ),
+            ));
+      }
+    });
+  }
   @override
   Widget build(BuildContext context) {   
     return Scaffold(
